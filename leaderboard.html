@@ -110,17 +110,28 @@ function loadLeaderboard(mode) {
   document.getElementById("allBtn").classList.toggle("active", mode === "all");
 
   const scores = {};
-  const currentWeek = getWeek(new Date());
+const weekStart = getMondayStart(new Date());       // Monday 00:00 this week (local)
+const nextWeekStart = new Date(weekStart);
+nextWeekStart.setDate(nextWeekStart.getDate() + 7); // next Monday 00:00
 
-  for (const r of rows) {
-    const player = String(r[headerIndex["Player"]] || "").trim();
-    const week = Number(r[headerIndex["Week"]]);
-    const total = Number(r[headerIndex["DailyTotal"]]) || 0;
+for (const r of rows) {
+  const player = String(r[headerIndex["Player"]] || "").trim();
+  const total = Number(r[headerIndex["DailyTotal"]]) || 0;
 
-    if (!player) continue;
-    if (mode === "week" && week !== currentWeek) continue;
+  // Date column is like "2025-12-12"
+  const dateStr = String(r[headerIndex["Date"]] || "").trim();
+  const entryDate = parseLocalDate(dateStr);
 
-    scores[player] = (scores[player] || 0) + total;
+  if (!player) continue;
+
+  if (mode === "week") {
+    if (!entryDate) continue;
+    if (entryDate < weekStart || entryDate >= nextWeekStart) continue;
+  }
+
+  scores[player] = (scores[player] || 0) + total;
+}
+
   }
 
   const ranked = Object.entries(scores).sort((a,b) => b[1] - a[1]);

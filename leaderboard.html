@@ -123,7 +123,7 @@ function loadLeaderboard(mode) {
 
     if (mode === "week") {
       const dateStr = String(r[headerIndex["Date"]] || "").trim();
-      const entryDate = parseLocalDate(dateStr);
+      const entryDate = parseLocalDate(r[headerIndex["Date"]]);
       if (!entryDate) continue;
       if (entryDate < weekStart || entryDate >= nextWeekStart) continue;
     }
@@ -172,11 +172,21 @@ function getMondayStart(d) {
 }
 
 // Parses "YYYY-MM-DD" into a LOCAL date at 00:00
-function parseLocalDate(yyyy_mm_dd) {
-  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(yyyy_mm_dd);
+function parseLocalDate(value) {
+  if (!value) return null;
+
+  // If it's already a Date-like string (e.g., "Fri Dec 12 2025 ...")
+  const d1 = new Date(value);
+  if (!isNaN(d1)) {
+    return new Date(d1.getFullYear(), d1.getMonth(), d1.getDate(), 0, 0, 0, 0);
+  }
+
+  // If it's "YYYY-MM-DD"
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(value).trim());
   if (!m) return null;
-  const y = Number(m[1]), mo = Number(m[2]) - 1, da = Number(m[3]);
-  return new Date(y, mo, da, 0, 0, 0, 0);
+  return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]), 0, 0, 0, 0);
+}
+
 }
 
 function escapeHtml(s) {

@@ -61,6 +61,7 @@ h1 {
   <button id="weekBtn" class="active" onclick="loadLeaderboard('week')">This Week</button>
   <button id="allBtn" onclick="loadLeaderboard('all')">All Time</button>
 </div>
+<p id="subtitle" style="text-align:center;color:#666;margin-top:-4px;"></p>
 
 <div id="list"></div>
 <script>
@@ -109,6 +110,15 @@ function loadLeaderboard(mode) {
   document.getElementById("weekBtn").classList.toggle("active", mode === "week");
   document.getElementById("allBtn").classList.toggle("active", mode === "all");
   document.getElementById("dayBtn").classList.toggle("active", mode === "day");
+const subtitle = document.getElementById("subtitle");
+
+if (mode === "day") {
+  subtitle.textContent = "Today’s points";
+} else if (mode === "week") {
+  subtitle.textContent = "Points from Monday to Sunday";
+} else {
+  subtitle.textContent = "All-time points";
+}
 
   const scores = {};
 

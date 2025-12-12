@@ -63,47 +63,46 @@ h1 {
 
 <div id="list"></div>
 <script>
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzvi4M8O6393Lzif6_XyzikHnLr996ynxG3mIcG9-CITWa8hbKeuK-G0MhjVJFxzenkUQ/exec";
-
 let rows = [];
 let headerIndex = {};
 
-fetch(SCRIPT_URL)
-  .then(res => res.json())
-  .then(data => {
-    if (!data || data.length < 2) {
-      showMsg("No data returned from the sheet yet.");
-      return;
-    }
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzvi4M8O6393Lzif6_XyzikHnLr996ynxG3mIcG9-CITWa8hbKeuK-G0MhjVJFxzenkUQ/exec"; // same one you use for saving
 
-    // Build header -> column index map
-    const headers = data[0].map(h => String(h).trim());
-    headers.forEach((h, i) => headerIndex[h] = i);
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({
+    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+  }[c]));
+}
 
-    // REQUIRED columns
-    const need = ["Player", "Week", "DailyTotal"];
-    const missing = need.filter(k => headerIndex[k] === undefined);
-    if (missing.length) {
-      showMsg("Missing columns: " + missing.join(", "));
-      console.log("Headers found:", headers);
-      return;
-    }
+function getMondayStart(d) {
+  const x = new Date(d);
+  x.setHours(0,0,0,0);
+  const day = x.getDay(); // Sun=0
+  const diff = (day === 0 ? -6 : 1 - day);
+  x.setDate(x.getDate() + diff);
+  return x;
+}
 
-    rows = data.slice(1).filter(r => r && r.length);
+function parseLocalDate(value) {
+  if (!value) return null;
 
-    // small debug line so you know it loaded
-    const debug = document.createElement("p");
-    debug.style.textAlign = "center";
-    debug.style.color = "#666";
-    debug.textContent = `Loaded ${rows.length} entries.`;
-    document.body.insertBefore(debug, document.getElementById("list"));
+  // If Apps Script returned a Date object
+  if (Object.prototype.toString.call(value) === "[object Date]" && !isNaN(value.getTime())) {
+    return new Date(value.getFullYear(), value.getMonth(), value.getDate(), 0, 0, 0, 0);
+  }
 
-    loadLeaderboard("week");
-  })
-  .catch(err => {
-    showMsg("Could not load data (check SCRIPT_URL / deployment access).");
-    console.error(err);
-  });
+  // If it's a string like "Fri Dec 12 2025 ..."
+  const d1 = new Date(value);
+  if (!isNaN(d1.getTime())) {
+    return new Date(d1.getFullYear(), d1.getMonth(), d1.getDate(), 0, 0, 0, 0);
+  }
+
+  // If it's "YYYY-MM-DD"
+  const s = String(value).trim();
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s);
+  if (!m) return null;
+  return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]), 0, 0, 0, 0);
+}
 
 function loadLeaderboard(mode) {
   document.getElementById("weekBtn").classList.toggle("active", mode === "week");
@@ -115,7 +114,10 @@ function loadLeaderboard(mode) {
   const nextWeekStart = new Date(weekStart);
   nextWeekStart.setDate(nextWeekStart.getDate() + 7);
 
-  for (const r of rows) {
+  // Start at 1 to skip header row
+  for (let i = 1; i < rows.length; i++) {
+    const r = rows[i];
+
     const player = String(r[headerIndex["Player"]] || "").trim();
     if (!player) continue;
 
@@ -140,67 +142,34 @@ function loadLeaderboard(mode) {
     return;
   }
 
-  ranked.forEach(([name, score], i) => {
+  ranked.forEach(([name, score], idx) => {
     const div = document.createElement("div");
     div.className = "card";
-    div.innerHTML = `<strong>#${i+1} ${escapeHtml(name)}</strong><span>${score}</span>`;
+    div.innerHTML = `<strong>#${idx+1} ${escapeHtml(name)}</strong><span>${score}</span>`;
     list.appendChild(div);
   });
 }
 
+function init() {
+  fetch(SCRIPT_URL)
+    .then(r => r.json())
+    .then(data => {
+      rows = data;
 
-function showMsg(msg) {
-  document.getElementById("list").innerHTML =
-    `<p style="text-align:center;color:#666;">${escapeHtml(msg)}</p>`;
+      const headers = rows[0] || [];
+      headerIndex = {};
+      headers.forEach((h, i) => headerIndex[String(h).trim()] = i);
+
+      loadLeaderboard("week");
+    })
+    .catch(err => {
+      console.error(err);
+      const list = document.getElementById("list");
+      if (list) list.innerHTML = "<p style='text-align:center;color:#666;'>Could not load data.</p>";
+    });
 }
 
-function getWeek(date) {
-  const d = new Date(date);
-  d.setHours(0,0,0);
-  d.setDate(d.getDate() + 3 - (d.getDay() + 6) % 7);
-  const week1 = new Date(d.getFullYear(),0,4);
-  return 1 + Math.round(((d - week1) / 86400000 - 3 + (week1.getDay() + 6) % 7) / 7);
-}
-function getMondayStart(d) {
-  const x = new Date(d);
-  x.setHours(0,0,0,0);
-  const day = x.getDay(); // Sun=0, Mon=1, ...
-  const diff = (day === 0 ? -6 : 1 - day); // move back to Monday
-  x.setDate(x.getDate() + diff);
-  return x;
-}
-
-// Parses "YYYY-MM-DD" into a LOCAL date at 00:00
-function parseLocalDate(value) {
-  if (!value) return null;
-
-  // If it's already a Date object (Apps Script sometimes returns this)
-  if (Object.prototype.toString.call(value) === "[object Date]" && !isNaN(value.getTime())) {
-    return new Date(value.getFullYear(), value.getMonth(), value.getDate(), 0, 0, 0, 0);
-  }
-
-  // Try normal Date parsing (handles "Fri Dec 12 2025 ...")
-  const d1 = new Date(value);
-  if (!isNaN(d1)) {
-    return new Date(d1.getFullYear(), d1.getMonth(), d1.getDate(), 0, 0, 0, 0);
-  }
-
-  // Fallback for "YYYY-MM-DD"
-  const s = String(value).trim();
-  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s);
-  if (!m) return null;
-
-  return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]), 0, 0, 0, 0);
-}
-
-
-}
-
-function escapeHtml(s) {
-  return String(s).replace(/[&<>"']/g, c => ({
-    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
-  }[c]));
-}
+window.addEventListener("load", init);
 </script>
 
 

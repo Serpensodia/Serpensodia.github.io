@@ -181,6 +181,20 @@ h1 {
 </div>
 
 <script>
+
+function formatDatePretty(value) {
+  const d = parseLocalDate(value);
+  if (!d) return escapeHtml(value);
+
+  return d.toLocaleDateString(undefined, {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+    year: "numeric"
+  });
+}
+
+  
 let rows = [];
 let headerIndex = {};
 
@@ -336,7 +350,7 @@ function openHistory(playerName) {
 
     entry.innerHTML = `
       <div>
-        <div><strong>${escapeHtml(dateVal)}</strong></div>
+        <div><strong>${formatDatePretty(dateVal)}</strong></div>
         <div class="pills">
           ${gym ? `<span class="pill">Gym</span>` : ""}
           ${steps ? `<span class="pill">10k</span>` : ""}

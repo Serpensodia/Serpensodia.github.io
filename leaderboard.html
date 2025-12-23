@@ -351,17 +351,20 @@ if (mode === "day") {
 let entryDate = null;
 
 if (mode === "day") {
-  // Use Timestamp for "Today" (prevents the UTC day-shift problem)
   const tsVal =
-    r[headerIndex["Timestamp"]] ??     // if your header is literally "Timestamp"
-    r[headerIndex["Time"]] ??          // if you named it something else
-    r[0];                              // fallback: first column is usually timestamp
+    r[headerIndex["Timestamp"]] ??
+    r[headerIndex["Time"]] ??
+    r[0]; // fallback: first column is usually timestamp
 
-  entryDate = parseLocalDate(tsVal);
-  if (!entryDate) continue;
+  const d = new Date(tsVal);
+  if (isNaN(d.getTime())) continue;
+
+  // IMPORTANT: turn timestamp into LOCAL date at 00:00
+  entryDate = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, 0, 0, 0);
 
   if (entryDate < todayStart || entryDate >= tomorrowStart) continue;
 }
+
 
 if (mode === "week") {
   // Keep using Date for weekly grouping
@@ -473,8 +476,17 @@ function openHistory(playerName) {
     const player = String(r[headerIndex["Player"]] || "").trim();
     if (player !== playerName) continue;
 
-    const dateVal = r[headerIndex["Date"]];
-    const entryDate = parseLocalDate(dateVal);
+    // Use Timestamp (local date) to avoid timezone day-shift in History
+const tsVal =
+  r[headerIndex["Timestamp"]] ??
+  r[headerIndex["Time"]] ??
+  r[0]; // fallback: first column usually is timestamp
+
+const d = new Date(tsVal);
+const entryDate = isNaN(d.getTime())
+  ? null
+  : new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, 0, 0, 0);
+
 
     const total = Number(r[headerIndex["DailyTotal"]]) || 0;
     const gym   = Number(r[headerIndex["Gym"]]) === 1;
@@ -485,7 +497,7 @@ function openHistory(playerName) {
     const pills = [];
     if (gym) pills.push("Gym");
     if (steps) pills.push("10k");
-    if (omad) pills.push("OMAD");
+    if (omad) pills.push("Diet");
 
     // Weekly bonus pill (based on the week this entry falls in)
     let weeklyBonus = 0;
@@ -514,7 +526,7 @@ function openHistory(playerName) {
 
     entry.innerHTML = `
       <div>
-        <div><strong>${formatDatePretty(dateVal)}</strong></div>
+        <div><strong>${formatDatePretty(entryDate || tsVal)}</strong></div>
         <div class="pills">${pillsHtml}</div>
       </div>
       <div class="pts">${total}</div>

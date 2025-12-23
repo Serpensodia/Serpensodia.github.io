@@ -357,37 +357,6 @@ if (mode === "day") {
       const gym  = Number(r[headerIndex["Gym"]]) === 1;
       const omad = Number(r[headerIndex["OMAD"]]) === 1;
 
-      // figure out which week this entry belongs to
-const entryDate = parseLocalDate(dateVal);
-let weeklyBonus = 0;
-
-if (entryDate) {
-  const weekStart = getMondayStart(entryDate);
-  const nextWeekStart = new Date(weekStart);
-  nextWeekStart.setDate(nextWeekStart.getDate() + 7);
-
-  const weekKey = weekStart.toISOString().slice(0, 10); // monday key
-
-  if (bonusCache[weekKey] === undefined) {
-    bonusCache[weekKey] = computeWeeklyBonusForPlayer(weekStart, nextWeekStart, playerName);
-  }
-  weeklyBonus = bonusCache[weekKey];
-}
-
-// build pills (keep UI the same, just add 1 more pill)
-const pills = [];
-if (gym) pills.push("Gym");
-if (steps) pills.push("10k");
-if (omad) pills.push("OMAD");
-
-if (weeklyBonus > 0) pills.push(`Bonus +${weeklyBonus}`);
-else pills.push("No bonus");
-
-const pillsHtml = pills.map(p => {
-  const cls = p.startsWith("Bonus") ? "pill bonus" : (p === "No bonus" ? "pill nobonus" : "pill");
-  return `<span class="${cls}">${escapeHtml(p)}</span>`;
-}).join("");
-
 
       if (gym)  weeklyDays[player].gym.add(dayKey);
       if (omad) weeklyDays[player].omad.add(dayKey);
@@ -467,18 +436,49 @@ function openHistory(playerName) {
   const body = document.getElementById("modalBody");
   body.innerHTML = "";
 
-  // loop ALL rows, show only this player (no week/day filter — full history)
+  // Cache bonus per week for this player so we don’t recompute for every entry
+  const bonusCache = {}; // weekKey ("YYYY-MM-DD" Monday) -> bonus number
+
   for (let i = 1; i < rows.length; i++) {
     const r = rows[i];
     const player = String(r[headerIndex["Player"]] || "").trim();
     if (player !== playerName) continue;
 
     const dateVal = r[headerIndex["Date"]];
-    const total = Number(r[headerIndex["DailyTotal"]]) || 0;
+    const entryDate = parseLocalDate(dateVal);
 
-    const gym = Number(r[headerIndex["Gym"]]) === 1;
+    const total = Number(r[headerIndex["DailyTotal"]]) || 0;
+    const gym   = Number(r[headerIndex["Gym"]]) === 1;
     const steps = Number(r[headerIndex["Steps"]]) === 1;
-    const omad = Number(r[headerIndex["OMAD"]]) === 1;
+    const omad  = Number(r[headerIndex["OMAD"]]) === 1;
+
+    // Build pills
+    const pills = [];
+    if (gym) pills.push("Gym");
+    if (steps) pills.push("10k");
+    if (omad) pills.push("OMAD");
+
+    // Weekly bonus pill (based on the week this entry falls in)
+    let weeklyBonus = 0;
+    if (entryDate) {
+      const weekStart = getMondayStart(entryDate);
+      const nextWeekStart = new Date(weekStart);
+      nextWeekStart.setDate(nextWeekStart.getDate() + 7);
+
+      const weekKey = weekStart.toISOString().slice(0, 10);
+      if (bonusCache[weekKey] === undefined) {
+        bonusCache[weekKey] = computeWeeklyBonusForPlayer(weekStart, nextWeekStart, playerName);
+      }
+      weeklyBonus = bonusCache[weekKey];
+    }
+
+    if (weeklyBonus > 0) pills.push(`Bonus +${weeklyBonus}`);
+    else pills.push("No bonus");
+
+    const pillsHtml = pills.map(p => {
+      const cls = p.startsWith("Bonus") ? "pill bonus" : (p === "No bonus" ? "pill nobonus" : "pill");
+      return `<span class="${cls}">${escapeHtml(p)}</span>`;
+    }).join("");
 
     const entry = document.createElement("div");
     entry.className = "entry";
@@ -487,7 +487,6 @@ function openHistory(playerName) {
       <div>
         <div><strong>${formatDatePretty(dateVal)}</strong></div>
         <div class="pills">${pillsHtml}</div>
-        </div>
       </div>
       <div class="pts">${total}</div>
     `;
@@ -497,9 +496,9 @@ function openHistory(playerName) {
 
   if (body.innerHTML.trim() === "") {
     body.innerHTML = "<p style='text-align:center;color:#666;'>No entries for this player yet.</p>";
-    const bonusCache = {}; // key: "YYYY-MM-DD" (monday of that week) -> bonus number
   }
 }
+
 
 function closeModal() {
   document.getElementById("modal").classList.remove("open");

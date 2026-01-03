@@ -172,7 +172,7 @@ h1 {
 <body>
 
 <h1>Leaderboard</h1>
-<p style="text-align:center;margin-top:-10px;">
+<p style="text-align:center;margin-top=-10px;">
   <a href="index.html">← Back to Check-In</a>
 </p>
 
@@ -298,9 +298,9 @@ function computeWeeklyBonusForPlayer(weekStart, nextWeekStart, playerName) {
 
   let bonus = 0;
 
-// your rules: OMAD >= 6 days => +5, Gym >= 3 days => +6
-if (omadDays.size >= 6) bonus += 5;
-if (gymDays.size  >= 3) bonus += 6;
+  // your rules: OMAD >= 6 days => +5, Gym >= 3 days => +6
+  if (omadDays.size >= 6) bonus += 5;
+  if (gymDays.size  >= 3) bonus += 6;
 
   return bonus;
 }
@@ -365,7 +365,6 @@ if (mode === "day") {
   if (entryDate < todayStart || entryDate >= tomorrowStart) continue;
 }
 
-
 if (mode === "week") {
   // Keep using Date for weekly grouping
   entryDate = parseLocalDate(r[headerIndex["Date"]]);
@@ -373,7 +372,6 @@ if (mode === "week") {
 
   if (entryDate < weekStart || entryDate >= nextWeekStart) continue;
 }
-
 
     // base score always sums DailyTotal
     baseScores[player] = (baseScores[player] || 0) + total;
@@ -388,7 +386,6 @@ if (mode === "week") {
 
       const gym  = Number(r[headerIndex["Gym"]]) === 1;
       const omad = Number(r[headerIndex["OMAD"]]) === 1;
-
 
       if (gym)  weeklyDays[player].gym.add(dayKey);
       if (omad) weeklyDays[player].omad.add(dayKey);
@@ -432,7 +429,6 @@ if (mode === "week") {
     }
   }
 
-
   // ranked rows: include score + bonus so we can display it
   const ranked = Object.entries(baseScores)
     .map(([name, base]) => {
@@ -440,7 +436,6 @@ if (mode === "week") {
       return { name, base, bonus, score: base + bonus };
     })
     .sort((a, b) => b.score - a.score);
-
 
   const list = document.getElementById("list");
   list.innerHTML = "";
@@ -459,7 +454,6 @@ ranked.forEach((row, idx) => {
   ((mode === "week" || mode === "all") && row.bonus > 0)
     ? `<span style="color:#666;font-weight:600;"> (+${row.bonus})</span>`
     : "";
-
 
   div.innerHTML = `
     <strong>#${idx + 1} ${escapeHtml(row.name)}</strong>
@@ -514,7 +508,6 @@ const d = new Date(tsVal);
 const entryDate = isNaN(d.getTime())
   ? null
   : new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, 0, 0, 0);
-
 
     const total = Number(r[headerIndex["DailyTotal"]]) || 0;
     const gym      = Number(r[headerIndex["Gym"]]) === 1;
@@ -576,11 +569,9 @@ const entryDate = isNaN(d.getTime())
   }
 }
 
-
 function closeModal() {
   document.getElementById("modal").classList.remove("open");
 }
-
 
 document.addEventListener("click", (e) => {
   const modal = document.getElementById("modal");
@@ -591,10 +582,5 @@ document.addEventListener("click", (e) => {
   
 window.addEventListener("load", init);
 </script>
-
-
-  
-  
-
 </body>
 </html>

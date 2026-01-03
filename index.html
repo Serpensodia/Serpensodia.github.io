@@ -185,7 +185,7 @@
   <div class="row">
     <div>
       <div class="title">Cardio (4)</div>
-      <div class="sub">Personal cardio goal (e.g. 10,000 steps, 30 minutes cardio)</div>
+      <div class="sub">Personal cardio goal (e.g. 30 minutes cardio)</div>
     </div>
     <input type="checkbox" id="steps">
   </div>
@@ -197,9 +197,41 @@
     </div>
     <input type="checkbox" id="omad">
   </div>
+
+  <div class="row">
+    <div>
+      <div class="title">Calorie tracking (5)</div>
+      <div class="sub">Hit your calorie target for the day</div>
+    </div>
+    <input type="checkbox" id="calories">
+  </div>
+
+  <div class="row">
+    <div>
+      <div class="title">Steps 10k (6)</div>
+      <div class="sub">10,000 steps in a day</div>
+    </div>
+    <input type="checkbox" id="steps10k">
+  </div>
+
+  <div class="row">
+    <div>
+      <div class="title">Steps 6k (3)</div>
+      <div class="sub">6,000 steps in a day</div>
+    </div>
+    <input type="checkbox" id="steps6k">
+  </div>
+
+  <div class="row">
+    <div>
+      <div class="title">No carb day (2)</div>
+      <div class="sub">No-carbs day completed</div>
+    </div>
+    <input type="checkbox" id="nocarb">
+  </div>
 </div>
 
-  <p><strong>Total today:</strong> <span id="total">0</span> / 15</p>
+  <p><strong>Total today:</strong> <span id="total">0</span> / 31</p>
   <button id="submitBtn" onclick="submitDay()">Submit</button>
 <div class="hint" id="statusMsg"></div>
 
@@ -221,11 +253,15 @@ function calcTotal() {
   if (gym.checked) total += 6;
   if (steps.checked) total += 4;
   if (omad.checked) total += 5;
+  if (calories.checked) total += 5;
+  if (steps10k.checked) total += 6;
+  if (steps6k.checked) total += 3;
+  if (nocarb.checked) total += 2;
   document.getElementById("total").innerText = total;
   return total;
 }
 
-gym.onchange = steps.onchange = omad.onchange = calcTotal;
+gym.onchange = steps.onchange = omad.onchange = calories.onchange = steps10k.onchange = steps6k.onchange = nocarb.onchange = calcTotal;
 
 const NAME_KEY = "momentum_name";
 
@@ -287,6 +323,10 @@ setIdentityUI(name);
     gym: gym.checked ? 1 : 0,
     steps: steps.checked ? 1 : 0,
     omad: omad.checked ? 1 : 0,
+    calories: calories.checked ? 1 : 0,
+    steps10k: steps10k.checked ? 1 : 0,
+    steps6k: steps6k.checked ? 1 : 0,
+    nocarb: nocarb.checked ? 1 : 0,
     total: calcTotal()
   };
 
